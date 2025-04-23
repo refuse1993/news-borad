@@ -16,6 +16,7 @@ interface NewsArticle {
   source: string;
   url: string;
   published_at: string;
+  image_url?: string;
 }
 
 export default function Home() {
@@ -137,8 +138,10 @@ export default function Home() {
         return;
       }
 
-      const uniqueSources = [...new Set(data?.map(item => item.source).filter(Boolean))] as string[];
-      setSources(uniqueSources);
+      if (data) {
+        const uniqueSources = [...new Set(data.map(item => item.source).filter(Boolean))] as string[];
+        setSources(uniqueSources);
+      }
     } catch (error) {
       console.error('Failed to fetch sources:', error);
     }

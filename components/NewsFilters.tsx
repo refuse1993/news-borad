@@ -1,26 +1,35 @@
-// components/NewsFilters.js
+// components/NewsFilters.tsx
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { FunnelIcon, AdjustmentsHorizontalIcon, ChevronDownIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-export default function NewsFilters({ onFilterChange, onSortChange, sources = [] }) {
+interface NewsFiltersProps {
+  onFilterChange: (filter: string) => void;
+  onSortChange: (sort: string) => void;
+  sources: string[];
+}
+
+export default function NewsFilters({ onFilterChange, onSortChange, sources = [] }: NewsFiltersProps) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeSort, setActiveSort] = useState('latest');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
-  const [categorizedSources, setCategorizedSources] = useState({ 
+  const [categorizedSources, setCategorizedSources] = useState<{ 
+    popular: string[]; 
+    all: string[];
+  }>({ 
     popular: [], 
     all: [] 
   });
   
-  const dropdownRef = useRef(null);
-  const filterRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const filterRef = useRef<HTMLDivElement | null>(null);
 
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     }
@@ -52,7 +61,7 @@ export default function NewsFilters({ onFilterChange, onSortChange, sources = []
     });
   }, [sources, searchFilter]);
 
-  const handleFilterChange = (filterId) => {
+  const handleFilterChange = (filterId: string) => {
     setActiveFilter(filterId);
     onFilterChange(filterId);
     
@@ -62,13 +71,13 @@ export default function NewsFilters({ onFilterChange, onSortChange, sources = []
     }
   };
 
-  const handleSortChange = (sortId) => {
+  const handleSortChange = (sortId: string) => {
     setActiveSort(sortId);
     onSortChange(sortId);
     setDropdownOpen(false);
   };
 
-  const handleSearchFilterChange = (e) => {
+  const handleSearchFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchFilter(e.target.value);
   };
 
