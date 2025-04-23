@@ -1,7 +1,9 @@
+// layout.tsx 파일을 수정해 네비게이션 메뉴에 일간 뉴스 링크 추가
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ReactNode } from 'react'
 import { NewspaperIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,6 +26,16 @@ export default function RootLayout({
               <NewspaperIcon className="h-7 w-7 text-primary-600 mr-2" />
               <h1 className="text-xl font-semibold text-gray-800">뉴스 모음</h1>
             </div>
+            
+            <nav className="flex items-center space-x-4">
+              <Link href="/" className="text-gray-600 hover:text-primary-600 transition text-sm sm:text-base">
+                홈
+              </Link>
+              <Link href="/daily-news" className="text-gray-600 hover:text-primary-600 transition text-sm sm:text-base">
+                일간 뉴스
+              </Link>
+            </nav>
+            
             <div className="text-sm text-gray-500">
               {new Date().toLocaleDateString('ko-KR', {
                 year: 'numeric',
