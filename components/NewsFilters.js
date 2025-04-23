@@ -2,16 +2,10 @@
 'use client';
 import { useState } from 'react';
 
-/**
- * @param {{
- *   onFilterChange: (filter: string) => void,
- *   onSortChange: (sort: string) => void,
- *   sources: string[],
- * }} props
- */
 export default function NewsFilters({ onFilterChange, onSortChange, sources = [] }) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeSort, setActiveSort] = useState('latest');
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false); // 추가
 
   const handleFilterChange = (filterId) => {
     setActiveFilter(filterId);
@@ -22,6 +16,12 @@ export default function NewsFilters({ onFilterChange, onSortChange, sources = []
     setActiveSort(sortId);
     onSortChange(sortId);
   };
+
+  const toggleFilter = () => {
+    setIsFilterExpanded(!isFilterExpanded); // 추가
+  };
+
+  const displayedSources = isFilterExpanded ? sources : sources.slice(0, 5); // 처음 5개만 표시
 
   return (
     <div className="mb-6 space-y-4">
@@ -50,31 +50,42 @@ export default function NewsFilters({ onFilterChange, onSortChange, sources = []
           </button>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 pb-2 overflow-x-auto scrollbar-hide">
-        <button
-          onClick={() => handleFilterChange('all')}
-          className={`px-3 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors ${
-            activeFilter === 'all'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          전체
-        </button>
-
-        {sources.map((source) => (
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2 pb-2 overflow-x-auto scrollbar-hide">
           <button
-            key={source}
-            onClick={() => handleFilterChange(source)}
+            onClick={() => handleFilterChange('all')}
             className={`px-3 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors ${
-              activeFilter === source
+              activeFilter === 'all'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
             }`}
           >
-            {source}
+            전체
           </button>
-        ))}
+
+          {displayedSources.map((source) => (
+            <button
+              key={source}
+              onClick={() => handleFilterChange(source)}
+              className={`px-3 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors ${
+                activeFilter === source
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {source}
+            </button>
+          ))}
+        </div>
+
+        {sources.length > 5 && (
+          <button
+            onClick={toggleFilter}
+            className="text-sm text-primary-600 hover:underline"
+          >
+            {isFilterExpanded ? "필터 접기" : `더 많은 출처 (${sources.length - 5} +)`}
+          </button>
+        )}
       </div>
     </div>
   );
