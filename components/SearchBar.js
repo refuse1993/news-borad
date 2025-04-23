@@ -1,35 +1,72 @@
 // components/SearchBar.js
 'use client';
-
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function SearchBar({ onSearch }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSearch(searchTerm);
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    
+    // 디바운싱 - 타이핑 멈추면 검색 실행
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      onSearch(value);
+    }, 500);
   };
 
+  const clearSearch = () => {
+    setSearchTerm('');
+    onSearch('');
+    inputRef.current.focus();
+  };
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-lg">
-      <div className="relative">
+    <div className={`relative group transition-all duration-200 rounded-lg ${
+      isFocused ? 'ring-2 ring-primary-200 bg-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100'
+    }`}>
+      <div className="flex items-center">
+        <div className="pl-3 flex items-center text-gray-400">
+          <MagnifyingGlassIcon className="h-5 w-5" />
+        </div>
+        
         <input
+          ref={inputRef}
           type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="뉴스 검색..."
-          className="w-full pl-4 pr-12 py-2.5 text-sm rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-colors"
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className="w-full py-2.5 px-3 bg-transparent border-none focus:outline-none text-gray-700 placeholder-gray-400"
         />
-        <button
-          type="submit"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-600 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
+        
+        {searchTerm && (
+          <button
+            onClick={clearSearch}
+            className="pr-3 text-gray-400 hover:text-gray-600"
+            aria-label="검색어 지우기"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        )}
       </div>
-    </form>
+    </div>
   );
 }

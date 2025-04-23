@@ -6,6 +6,7 @@ import NewsCard from '@/components/NewsCard';
 import SearchBar from '@/components/SearchBar';
 import NewsFilters from '@/components/NewsFilters';
 import supabase from '@/lib/supabaseClient';
+import { NewspaperIcon } from '@heroicons/react/24/outline';
 
 // Define the type for a news article based on your database schema
 interface NewsArticle {
@@ -88,7 +89,7 @@ export default function Home() {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [currentFilter, currentSort, searchTerm, pageSize, supabase]);
+  }, [currentFilter, currentSort, searchTerm, pageSize]);
 
   // 추가 뉴스 로딩
   const loadMoreNews = useCallback(() => {
@@ -141,7 +142,7 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to fetch sources:', error);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     fetchSources();
@@ -164,25 +165,16 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white p-6 rounded-xl shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-          <div className="md:flex-1">
-            <SearchBar onSearch={handleSearch} />
-          </div>
-          <div className="flex justify-end">
-            <div className="text-sm text-gray-500">
-              {news.length}개의 뉴스
-            </div>
-          </div>
-        </div>
-
-        <NewsFilters
-          onFilterChange={handleFilterChange}
-          onSortChange={handleSortChange}
-          sources={sources}
-        />
+    <div className="max-w-screen-xl mx-auto">
+      <div className="mb-4">
+        <SearchBar onSearch={handleSearch} />
       </div>
+      
+      <NewsFilters
+        onFilterChange={handleFilterChange}
+        onSortChange={handleSortChange}
+        sources={sources}
+      />
 
       {initialLoading ? (
         <div className="py-12">
@@ -192,16 +184,16 @@ export default function Home() {
           <p className="text-center mt-4 text-gray-600">뉴스를 불러오는 중...</p>
         </div>
       ) : news.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v10m2 2v-6m0 0V8m0 0h-6" />
-          </svg>
-          <h2 className="text-xl text-gray-700 mb-2">뉴스를 찾을 수 없습니다</h2>
-          <p className="text-gray-500">검색어나 필터를 변경하여 다시 시도해보세요.</p>
+        <div className="flex flex-col items-center justify-center py-16 px-4 bg-white rounded-xl shadow-sm">
+          <div className="bg-gray-100 p-4 rounded-full mb-4">
+            <NewspaperIcon className="h-10 w-10 text-gray-400" />
+          </div>
+          <h2 className="text-xl font-medium text-gray-700 mb-2">뉴스를 찾을 수 없습니다</h2>
+          <p className="text-gray-500 text-center max-w-md">검색어나 필터를 변경하여 다시 시도해보세요.</p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-4 mb-6">
             {news.map((article, index) => {
               if (news.length === index + 1) {
                 return (
@@ -216,14 +208,14 @@ export default function Home() {
           </div>
 
           {loading && hasMore && (
-            <div className="py-8 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
-              <p className="mt-2 text-gray-600">더 많은 뉴스를 불러오는 중...</p>
+            <div className="py-6 text-center">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-500"></div>
+              <p className="mt-2 text-sm text-gray-500">더 많은 뉴스를 불러오는 중...</p>
             </div>
           )}
 
           {!loading && !hasMore && news.length > 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-6 text-sm text-gray-400">
               모든 뉴스를 불러왔습니다.
             </div>
           )}
