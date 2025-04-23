@@ -19,8 +19,8 @@ import { scaleOrdinal } from 'd3-scale'; // 필요 시 사용 (현재 코드에�
 
 // 데이터 인터페이스 정의
 interface TagRelation {
-  source: string; // 관계의 시작 태그 ID
-  target: string; // 관계의 대상 태그 ID
+  source: string | SimulationNode; // 관계의 시작 태그 ID
+  target: string | SimulationNode; // 관계의 대상 태그 ID
   strength: number; // 관계 강도 (0 ~ 1)
 }
 
@@ -79,23 +79,32 @@ export default function TagRelationshipGraph({
 
     // 링크 데이터 생성 (입력된 relations 그대로 사용 가능)
     // D3의 forceLink는 source/target 문자열 ID를 기반으로 노드를 연결합니다.
-    const links: TagRelation[] = relations;
+    const links: TagRelation[] = relations.map(relation => {
+      // 문자열 상태로 유지하고 시뮬레이션 내부에서 변환되도록 함
+      return {
+        source: relation.source,
+        target: relation.target,
+        strength: relation.strength
+      };
+    });
 
     // 관계 데이터(links)를 순회하며 모든 노드 정보를 nodeMap에 추가
     links.forEach(rel => {
       // 소스 노드 추가 또는 업데이트
-      if (!nodeMap.has(rel.source)) {
-        nodeMap.set(rel.source, {
-          id: rel.source,
-          group: rel.source === selectedTag ? 1 : 2, // 중심 태그는 group 1
+      const sourceId = typeof rel.source === 'string' ? rel.source : rel.source.id;
+      if (!nodeMap.has(sourceId)) {
+        nodeMap.set(sourceId, {
+          id: sourceId,
+          group: sourceId === selectedTag ? 1 : 2, // 중심 태그는 group 1
           // 필요한 경우 여기에 추가 속성 (예: count) 초기화
         });
       }
       // 타겟 노드 추가 또는 업데이트
-      if (!nodeMap.has(rel.target)) {
-        nodeMap.set(rel.target, {
-          id: rel.target,
-          group: rel.target === selectedTag ? 1 : 2, // 중심 태그는 group 1
+      const targetId = typeof rel.target === 'string' ? rel.target : rel.target.id;
+      if (!nodeMap.has(targetId)) {
+        nodeMap.set(targetId, {
+          id: targetId,
+          group: targetId === selectedTag ? 1 : 2, // 중심 태그는 group 1
         });
       }
     });
@@ -131,7 +140,10 @@ export default function TagRelationshipGraph({
     // 새 시뮬레이션 생성
     const simulation = forceSimulation<SimulationNode, TagRelation>(nodes)
       .force("link", forceLink<SimulationNode, TagRelation>(links)
-        .id(d => d.id) // 노드 ID 매핑
+        .id((d: SimulationNode | string) => {
+          // d가 문자열이면 그대로 반환, 객체면 id 속성 반환
+          return typeof d === 'string' ? d : d.id;
+        })
         .distance(linkDistance) // 링크 거리 설정
         .strength(linkStrength) // 링크 강도 설정
       )
@@ -205,7 +217,11 @@ export default function TagRelationshipGraph({
       .text((d: SimulationNode) => {
         // 이 노드를 target으로 하는 관계 찾기 (주로 중심->관련 태그 관계)
         // 만약 관련 태그 간 관계도 표시하고 싶다면, 로직 수정 필요
-        const relationToCenter = relations.find(r => r.source === selectedTag && r.target === d.id);
+        const relationToCenter = relations.find(r => {
+          const sourceId = typeof r.source === 'string' ? r.source : r.source.id;
+          const targetId = typeof r.target === 'string' ? r.target : r.target.id;
+          return sourceId === selectedTag && targetId === d.id;
+        });
         return relationToCenter ? `${Math.round(relationToCenter.strength * 100)}%` : "";
       })
       .attr("x", 0)
@@ -221,10 +237,19 @@ export default function TagRelationshipGraph({
     simulation.on("tick", () => {
       // 링크 위치 업데이트
       link
-        .attr("x1", d => (d.source as SimulationNode).x ?? 0)
-        .attr("y1", d => (d.source as SimulationNode).y ?? 0)
-        .attr("x2", d => (d.target as SimulationNode).x ?? 0)
-        .attr("y2", d => (d.target as SimulationNode).y ?? 0);
+        .attr("x1", d => {
+          // source가 string이 아닌 객체일 경우 x 속성에 접근, 아니면 0 반환
+          return typeof d.source === 'object' && d.source !== null ? (d.source as SimulationNode).x ?? 0 : 0;
+        })
+        .attr("y1", d => {
+          return typeof d.source === 'object' && d.source !== null ? (d.source as SimulationNode).y ?? 0 : 0;
+        })
+        .attr("x2", d => {
+          return typeof d.target === 'object' && d.target !== null ? (d.target as SimulationNode).x ?? 0 : 0;
+        })
+        .attr("y2", d => {
+          return typeof d.target === 'object' && d.target !== null ? (d.target as SimulationNode).y ?? 0 : 0;
+        });
 
       // 노드 그룹 위치 업데이트 (SVG 경계 제한 포함)
       nodeGroup.attr("transform", (d: SimulationNode) => {

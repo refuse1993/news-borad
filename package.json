@@ -23,6 +23,7 @@
   "devDependencies": {
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/typography": "^0.5.10",
+    "@types/d3": "^7.4.3",
     "@types/react": "19.1.2",
     "autoprefixer": "^10.4.21",
     "eslint": "^8",

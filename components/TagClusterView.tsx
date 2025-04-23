@@ -1,11 +1,21 @@
+// components/TagClusterView.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
-import * as d3 from 'd3';
+import { select } from 'd3-selection';
+import { hierarchy, pack, HierarchyNode } from 'd3-hierarchy';
+import { scaleOrdinal } from 'd3-scale';
 
 interface TagInfo {
   name: string;
   count: number;
+}
+
+// 패킹 데이터 인터페이스 정의
+interface TagPackData {
+  name: string;
+  value: number;
+  type: 'center' | 'related';
 }
 
 interface TagClusterViewProps {
@@ -25,10 +35,10 @@ export default function TagClusterView({
     if (!svgRef.current || !centerTag) return;
 
     // 기존 그래프 초기화
-    d3.select(svgRef.current).selectAll("*").remove();
+    select(svgRef.current).selectAll("*").remove();
 
     // SVG 크기 설정
-    const svg = d3.select(svgRef.current);
+    const svg = select(svgRef.current);
     const width = svgRef.current.clientWidth;
     const height = svgRef.current.clientHeight;
     
@@ -48,7 +58,7 @@ export default function TagClusterView({
     const maxCount = Math.max(...relatedTags.map(tag => tag.count));
     
     // 패킹 레이아웃을 위한 데이터 준비
-    const packData = [
+    const packData: TagPackData[] = [
       {
         name: centerTag,
         value: maxCount * 1.5, // 중심 태그는 더 크게
@@ -57,16 +67,20 @@ export default function TagClusterView({
       ...relatedTags.map(tag => ({
         name: tag.name,
         value: tag.count,
-        type: 'related'
+        type: 'related' as const
       }))
     ];
 
-    // 계층 구조 생성
-    const hierarchyData = d3.hierarchy({ children: packData })
-      .sum(d => (d as any).value);
+    // 계층 구조 생성 (data 객체 타입은 {children: TagPackData[]}이지만 계층 노드 내부 데이터는 TagPackData)
+    const hierarchyData = hierarchy<{children: TagPackData[]}>({ children: packData })
+      .sum(d => {
+        // d의 타입이 TagPackData 또는 계층 노드의 루트인지 확인
+        // 'value' 속성이 있으면 해당 값 사용, 없으면 0 반환
+        return ('value' in d) ? Number(d.value) : 0;
+      });
 
     // 패킹 레이아웃 생성
-    const packLayout = d3.pack()
+    const packLayout = pack<{children: TagPackData[]}>()
       .size([width - 20, height - 20])
       .padding(5);
 
@@ -74,7 +88,7 @@ export default function TagClusterView({
     const root = packLayout(hierarchyData);
 
     // 색상 스케일
-    const colorScale = d3.scaleOrdinal()
+    const colorScale = scaleOrdinal<string>()
       .domain(['center', 'related'])
       .range(['#4f46e5', '#60a5fa']);
 
@@ -88,7 +102,8 @@ export default function TagClusterView({
       .attr("class", "bubble-node")
       .style("cursor", "pointer")
       .on("click", (event, d) => {
-        const nodeData = d.data as any;
+        // 노드 데이터가 루트가 아닌 경우 태그 데이터에 접근
+        const nodeData = d.data as unknown as TagPackData;
         if (nodeData.name !== centerTag) {
           onTagSelect(nodeData.name);
         }
@@ -97,14 +112,23 @@ export default function TagClusterView({
     // 버블 원 생성
     node.append("circle")
       .attr("r", d => d.r)
-      .attr("fill", d => colorScale((d.data as any).type))
-      .attr("fill-opacity", d => (d.data as any).type === 'center' ? 0.9 : 0.7)
+      .attr("fill", d => {
+        const data = d.data as unknown as TagPackData;
+        return colorScale(data.type);
+      })
+      .attr("fill-opacity", d => {
+        const data = d.data as unknown as TagPackData;
+        return data.type === 'center' ? 0.9 : 0.7;
+      })
       .attr("stroke", "#fff")
       .attr("stroke-width", 1.5);
 
     // 태그 이름 텍스트 추가
     node.append("text")
-      .text(d => (d.data as any).name)
+      .text(d => {
+        const data = d.data as unknown as TagPackData;
+        return data.name;
+      })
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
       .attr("font-size", d => Math.min(d.r / 3, 14))
@@ -114,7 +138,7 @@ export default function TagClusterView({
 
     // 터치 디바이스 최적화를 위한 마우스 이벤트
     node.on("mouseover", function() {
-      d3.select(this)
+      select(this)
         .transition()
         .duration(200)
         .attr("transform", function(d: any) {
@@ -122,7 +146,7 @@ export default function TagClusterView({
         });
     })
     .on("mouseout", function() {
-      d3.select(this)
+      select(this)
         .transition()
         .duration(200)
         .attr("transform", function(d: any) {
