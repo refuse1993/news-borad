@@ -1,8 +1,14 @@
 // components/NewsFilters.js
 'use client';
-
 import { useState } from 'react';
 
+/**
+ * @param {{
+ *   onFilterChange: (filter: string) => void,
+ *   onSortChange: (sort: string) => void,
+ *   sources: string[],
+ * }} props
+ */
 export default function NewsFilters({ onFilterChange, onSortChange, sources = [] }) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeSort, setActiveSort] = useState('latest');
@@ -22,21 +28,21 @@ export default function NewsFilters({ onFilterChange, onSortChange, sources = []
       <div className="flex justify-between items-center">
         <h2 className="text-xl md:text-2xl font-bold text-gray-800">최신 뉴스</h2>
         <div className="flex space-x-2">
-          <button 
+          <button
             onClick={() => handleSortChange('latest')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-              activeSort === 'latest' 
-                ? 'bg-primary-600 text-white' 
+              activeSort === 'latest'
+                ? 'bg-primary-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
             최신순
           </button>
-          <button 
+          <button
             onClick={() => handleSortChange('oldest')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-              activeSort === 'oldest' 
-                ? 'bg-primary-600 text-white' 
+              activeSort === 'oldest'
+                ? 'bg-primary-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
@@ -44,7 +50,6 @@ export default function NewsFilters({ onFilterChange, onSortChange, sources = []
           </button>
         </div>
       </div>
-      
       <div className="flex flex-wrap gap-2 pb-2 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => handleFilterChange('all')}
@@ -56,8 +61,8 @@ export default function NewsFilters({ onFilterChange, onSortChange, sources = []
         >
           전체
         </button>
-        
-        {sources.map(source => (
+
+        {sources.map((source) => (
           <button
             key={source}
             onClick={() => handleFilterChange(source)}

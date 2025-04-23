@@ -1,4 +1,4 @@
-// app/page.js
+// app/page.tsx
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -7,18 +7,89 @@ import SearchBar from '@/components/SearchBar';
 import NewsFilters from '@/components/NewsFilters';
 import supabase from '@/lib/supabaseClient';
 
+// Define the type for a news article based on your database schema
+interface NewsArticle {
+  id: number;
+  title: string;
+  summary: string;
+  source: string;
+  url: string;
+  published_at: string;
+}
+
 export default function Home() {
-  const [news, setNews] = useState([]);
+  const [news, setNews] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [currentFilter, setCurrentFilter] = useState('all');
   const [currentSort, setCurrentSort] = useState('latest');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sources, setSources] = useState([]);
+  const [sources, setSources] = useState<string[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
-  const pageSize = 12; // 한 번에 가져올 뉴스 수
-  
+  const pageSize = 12;
+
+  // 뉴스 데이터 가져오기
+  const fetchNews = useCallback(async (pageNum = 0, isReset = false): Promise<void> => {
+    if (isReset) {
+      setInitialLoading(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      let query = supabase
+        .from('crawled_contents')
+        .select('*');
+
+      if (currentFilter !== 'all') {
+        query = query.eq('source', currentFilter);
+      }
+
+      if (currentSort === 'latest') {
+        query = query.order('published_at', { ascending: false });
+      } else if (currentSort === 'oldest') {
+        query = query.order('published_at', { ascending: true });
+      }
+
+      if (searchTerm) {
+        query = query.or(`title.ilike.%${searchTerm}%,summary.ilike.%${searchTerm}%`);
+      }
+
+      const from = pageNum * pageSize;
+      query = query.range(from, from + pageSize - 1);
+
+      const { data, error } = await query as { data: NewsArticle[] | null, error: any };
+
+      if (error) {
+        console.error('Error fetching news:', error);
+        setHasMore(false);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setHasMore(false);
+        if (isReset) setNews([]);
+        return;
+      }
+
+      if (data.length < pageSize) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+
+      setNews(prev => isReset ? data : [...prev, ...data]);
+
+    } catch (error) {
+      console.error('Failed to fetch news:', error);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  }, [currentFilter, currentSort, searchTerm, pageSize, supabase]);
+
   // 추가 뉴스 로딩
   const loadMoreNews = useCallback(() => {
     if (!loading && hasMore) {
@@ -26,78 +97,23 @@ export default function Home() {
       setPage(nextPage);
       fetchNews(nextPage);
     }
-  }, [loading, hasMore, page]);
-  
+  }, [loading, hasMore, page, fetchNews]);
+
   // 인피니티 스크롤을 위한 관찰자 설정
   const observer = useRef<IntersectionObserver | null>(null);
-  const lastNewsElementRef = useCallback(node => {
+
+  const lastNewsElementRef = useCallback((node: HTMLDivElement | null) => {
     if (loading) return;
     if (observer.current) observer.current.disconnect();
+
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
         loadMoreNews();
       }
     });
+
     if (node) observer.current.observe(node);
   }, [loading, hasMore, loadMoreNews]);
-
-  // 뉴스 데이터 가져오기
-  const fetchNews = async (pageNum = 0, isReset = false) => {
-    if (isReset) {
-      setInitialLoading(true);
-    } else {
-      setLoading(true);
-    }
-    
-    try {
-      // 기본 쿼리 설정
-      let query = supabase
-        .from('crawled_contents')
-        .select('*');
-      
-      // 출처 필터 적용
-      if (currentFilter !== 'all') {
-        query = query.eq('source', currentFilter);
-      }
-      
-      // 정렬 적용
-      if (currentSort === 'latest') {
-        query = query.order('published_at', { ascending: false });
-      } else if (currentSort === 'oldest') {
-        query = query.order('published_at', { ascending: true });
-      }
-      
-      // 검색어 필터 적용 (title과 summary에서 검색)
-      if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,summary.ilike.%${searchTerm}%`);
-      }
-      
-      // 페이지네이션 적용
-      const from = pageNum * pageSize;
-      query = query.range(from, from + pageSize - 1);
-      
-      // 쿼리 실행
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching news:', error);
-        return;
-      }
-
-      // 더 가져올 데이터가 있는지 확인
-      if (data.length < pageSize) {
-        setHasMore(false);
-      }
-
-      // 이전 데이터와 합치기 (초기화하는 경우 제외)
-      setNews(prev => isReset ? data : [...prev, ...data]);
-    } catch (error) {
-      console.error('Failed to fetch news:', error);
-    } finally {
-      setLoading(false);
-      setInitialLoading(false);
-    }
-  };
 
   // 뉴스 데이터 초기화 및 재로딩
   const resetAndFetchNews = useCallback(() => {
@@ -105,49 +121,45 @@ export default function Home() {
     setPage(0);
     setHasMore(true);
     fetchNews(0, true);
-  }, [currentFilter, currentSort, searchTerm]);
+  }, [fetchNews]);
 
   // 출처 리스트 가져오기
-  const fetchSources = async () => {
+  const fetchSources = useCallback(async (): Promise<void> => {
     try {
       const { data, error } = await supabase
         .from('crawled_contents')
         .select('source')
         .not('source', 'is', null);
-      
+
       if (error) {
         console.error('Error fetching sources:', error);
         return;
       }
 
-      // 중복 제거하고 출처 배열 생성
-      const uniqueSources = [...new Set(data.map(item => item.source))].filter(Boolean);
+      const uniqueSources = [...new Set(data?.map(item => item.source).filter(Boolean))] as string[];
       setSources(uniqueSources);
     } catch (error) {
       console.error('Failed to fetch sources:', error);
     }
-  };
+  }, [supabase]);
 
-  // 초기 데이터 로딩
   useEffect(() => {
     fetchSources();
-    resetAndFetchNews();
-  }, [resetAndFetchNews]);
+  }, [fetchSources]);
 
-  // 필터나 정렬, 검색어 변경 시 데이터 재로딩
   useEffect(() => {
     resetAndFetchNews();
   }, [currentFilter, currentSort, searchTerm, resetAndFetchNews]);
 
-  const handleSearch = (term) => {
+  const handleSearch = (term: string) => {
     setSearchTerm(term);
   };
 
-  const handleFilterChange = (filter) => {
+  const handleFilterChange = (filter: string) => {
     setCurrentFilter(filter);
   };
 
-  const handleSortChange = (sort) => {
+  const handleSortChange = (sort: string) => {
     setCurrentSort(sort);
   };
 
@@ -164,14 +176,14 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
-        <NewsFilters 
-          onFilterChange={handleFilterChange} 
+
+        <NewsFilters
+          onFilterChange={handleFilterChange}
           onSortChange={handleSortChange}
           sources={sources}
         />
       </div>
-      
+
       {initialLoading ? (
         <div className="py-12">
           <div className="flex justify-center items-center">
@@ -191,7 +203,6 @@ export default function Home() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {news.map((article, index) => {
-              // 마지막 요소에 ref 추가
               if (news.length === index + 1) {
                 return (
                   <div ref={lastNewsElementRef} key={article.id}>
@@ -203,15 +214,15 @@ export default function Home() {
               }
             })}
           </div>
-          
-          {loading && (
+
+          {loading && hasMore && (
             <div className="py-8 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
               <p className="mt-2 text-gray-600">더 많은 뉴스를 불러오는 중...</p>
             </div>
           )}
-          
-          {!hasMore && news.length > 0 && (
+
+          {!loading && !hasMore && news.length > 0 && (
             <div className="text-center py-8 text-gray-500">
               모든 뉴스를 불러왔습니다.
             </div>
