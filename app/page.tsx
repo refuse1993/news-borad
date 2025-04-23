@@ -19,6 +19,15 @@ export default function Home() {
   const [page, setPage] = useState(0);
   const pageSize = 12; // 한 번에 가져올 뉴스 수
   
+  // 추가 뉴스 로딩
+  const loadMoreNews = useCallback(() => {
+    if (!loading && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchNews(nextPage);
+    }
+  }, [loading, hasMore, page]);
+  
   // 인피니티 스크롤을 위한 관찰자 설정
   const observer = useRef();
   const lastNewsElementRef = useCallback(node => {
@@ -30,56 +39,7 @@ export default function Home() {
       }
     });
     if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
-
-  // 초기 데이터 로딩
-  useEffect(() => {
-    fetchSources();
-    resetAndFetchNews();
-  }, []);
-
-  // 필터나 정렬, 검색어 변경 시 데이터 재로딩
-  useEffect(() => {
-    resetAndFetchNews();
-  }, [currentFilter, currentSort, searchTerm]);
-
-  // 출처 리스트 가져오기
-  const fetchSources = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('crawled_contents')
-        .select('source')
-        .not('source', 'is', null);
-      
-      if (error) {
-        console.error('Error fetching sources:', error);
-        return;
-      }
-
-      // 중복 제거하고 출처 배열 생성
-      const uniqueSources = [...new Set(data.map(item => item.source))].filter(Boolean);
-      setSources(uniqueSources);
-    } catch (error) {
-      console.error('Failed to fetch sources:', error);
-    }
-  };
-
-  // 뉴스 데이터 초기화 및 재로딩
-  const resetAndFetchNews = () => {
-    setNews([]);
-    setPage(0);
-    setHasMore(true);
-    fetchNews(0, true);
-  };
-
-  // 추가 뉴스 로딩
-  const loadMoreNews = () => {
-    if (!loading && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchNews(nextPage);
-    }
-  };
+  }, [loading, hasMore, loadMoreNews]);
 
   // 뉴스 데이터 가져오기
   const fetchNews = async (pageNum = 0, isReset = false) => {
@@ -138,6 +98,46 @@ export default function Home() {
       setInitialLoading(false);
     }
   };
+
+  // 뉴스 데이터 초기화 및 재로딩
+  const resetAndFetchNews = useCallback(() => {
+    setNews([]);
+    setPage(0);
+    setHasMore(true);
+    fetchNews(0, true);
+  }, [currentFilter, currentSort, searchTerm]);
+
+  // 출처 리스트 가져오기
+  const fetchSources = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('crawled_contents')
+        .select('source')
+        .not('source', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching sources:', error);
+        return;
+      }
+
+      // 중복 제거하고 출처 배열 생성
+      const uniqueSources = [...new Set(data.map(item => item.source))].filter(Boolean);
+      setSources(uniqueSources);
+    } catch (error) {
+      console.error('Failed to fetch sources:', error);
+    }
+  };
+
+  // 초기 데이터 로딩
+  useEffect(() => {
+    fetchSources();
+    resetAndFetchNews();
+  }, [resetAndFetchNews]);
+
+  // 필터나 정렬, 검색어 변경 시 데이터 재로딩
+  useEffect(() => {
+    resetAndFetchNews();
+  }, [currentFilter, currentSort, searchTerm, resetAndFetchNews]);
 
   const handleSearch = (term) => {
     setSearchTerm(term);
