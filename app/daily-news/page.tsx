@@ -83,33 +83,30 @@ export default function DailyNewsPage() {
 
   return (
     <div className="max-w-screen-xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">일간 뉴스 다이제스트</h1>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <input 
-              type="date" 
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              value={date}
-              onChange={handleDateChange}
-              max={new Date().toISOString().split('T')[0]}
-            />
-            
-            <button
-              onClick={regenerateNewsDigest}
-              disabled={regenerating}
-              className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-md text-sm transition disabled:opacity-50"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
-              {regenerating ? '생성 중...' : '다이제스트 재생성'}
-            </button>
-          </div>
+      <div className="bg-white rounded-lg shadow-sm p-3 mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold text-gray-800">일간 뉴스</h1>
+          <span className="text-xs text-gray-500">by Gemini AI</span>
         </div>
         
-        <p className="text-gray-600 text-sm mb-2">
-          이 페이지는 Gemini AI를 활용하여 오늘의 주요 뉴스를 자동으로 요약하고 정리합니다.
-        </p>
+        <div className="flex items-center gap-2">
+          <input 
+            type="date" 
+            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+            value={date}
+            onChange={handleDateChange}
+            max={new Date().toISOString().split('T')[0]}
+          />
+          
+          <button
+            onClick={regenerateNewsDigest}
+            disabled={regenerating}
+            className="flex items-center gap-1 bg-primary-500 hover:bg-primary-600 text-white px-2 py-1 rounded text-xs transition disabled:opacity-50"
+          >
+            <ArrowPathIcon className={`h-3 w-3 ${regenerating ? 'animate-spin' : ''}`} />
+            {regenerating ? '생성 중' : '재생성'}
+          </button>
+        </div>
       </div>
 
       {loading ? (

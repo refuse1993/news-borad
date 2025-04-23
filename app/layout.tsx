@@ -8,7 +8,7 @@ import Link from 'next/link'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: '뉴스 모음',
+  title: 'CEA News',
   description: '크롤링된 최신 뉴스 모음',
 }
 
@@ -24,7 +24,7 @@ export default function RootLayout({
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center">
               <NewspaperIcon className="h-7 w-7 text-primary-600 mr-2" />
-              <h1 className="text-xl font-semibold text-gray-800">뉴스 모음</h1>
+              <h1 className="text-xl font-semibold text-gray-800">CEA News</h1>
             </div>
             
             <nav className="flex items-center">
