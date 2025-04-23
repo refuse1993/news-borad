@@ -1,6 +1,6 @@
 // app/page.js
 'use client';
- 
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import NewsCard from '@/components/NewsCard';
 import SearchBar from '@/components/SearchBar';
@@ -29,7 +29,7 @@ export default function Home() {
   }, [loading, hasMore, page]);
   
   // 인피니티 스크롤을 위한 관찰자 설정
-  const observer = useRef();
+  const observer = useRef<IntersectionObserver | null>(null);
   const lastNewsElementRef = useCallback(node => {
     if (loading) return;
     if (observer.current) observer.current.disconnect();
