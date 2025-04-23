@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import supabase from '@/lib/supabaseClient';
 import { XMLParser } from 'fast-xml-parser';
 
+// 피드 항목 타입 정의
+interface FeedItem {
+  title: string;
+  url: string;
+  summary: string | null;
+  published_at: string;
+  source: string;
+  image_url: string | null;
+  guid: string;
+  extracted_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -48,14 +62,14 @@ export async function POST(
     const parsedData = parser.parse(xmlContent);
     
     // 4. 피드 형식에 따라 항목 추출 (RSS 또는 Atom)
-    const feedItems = [];
+    const feedItems: FeedItem[] = [];
     
     // RSS 형식 처리
     if (parsedData.rss && parsedData.rss.channel) {
       const channel = parsedData.rss.channel;
       const items = Array.isArray(channel.item) ? channel.item : [channel.item];
       
-      feedItems.push(...items.map(item => ({
+      feedItems.push(...items.map((item: any) => ({
         title: item.title,
         url: item.link,
         summary: item.description,
@@ -70,7 +84,7 @@ export async function POST(
       const entries = Array.isArray(parsedData.feed.entry) ? 
         parsedData.feed.entry : [parsedData.feed.entry];
       
-      feedItems.push(...entries.map(entry => ({
+      feedItems.push(...entries.map((entry: any) => ({
         title: entry.title && (entry.title['#text'] || entry.title),
         url: entry.link ? (entry.link['@_href'] || entry.link) : null,
         summary: entry.summary || (entry.content ? entry.content['#text'] || entry.content : null),
@@ -210,8 +224,8 @@ export async function POST(
   }
 }
 
-// 이미지 URL 추출 함수
-function extractImageUrl(item: any): string | null {
+// 이미지 URL 추출 함수 - 타입 지정
+function extractImageUrl(item: Record<string, any>): string | null {
   // 1. 미디어 콘텐츠 확인
   if (item['media:content'] && item['media:content']['@_url']) {
     return item['media:content']['@_url'];
