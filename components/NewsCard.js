@@ -10,22 +10,24 @@ export default function NewsCard({ article }) {
     ? format(new Date(article.published_at), 'PPP', { locale: ko })
     : '날짜 없음';
 
-  // 카테고리 색상 정의
-  const categoryColors = {
-    '정치': 'bg-red-100 text-red-800',
-    '경제': 'bg-blue-100 text-blue-800',
-    '사회': 'bg-yellow-100 text-yellow-800',
-    '문화': 'bg-purple-100 text-purple-800',
-    '스포츠': 'bg-green-100 text-green-800',
-    '국제': 'bg-indigo-100 text-indigo-800',
-    '기술': 'bg-cyan-100 text-cyan-800',
-    '건강': 'bg-pink-100 text-pink-800',
-    'default': 'bg-gray-100 text-gray-800'
+  // 출처별 색상 정의 (동적으로 생성)
+  const getSourceColor = (source) => {
+    const colors = {
+      '경향신문': 'bg-red-100 text-red-800',
+      '국민일보': 'bg-blue-100 text-blue-800',
+      '동아일보': 'bg-yellow-100 text-yellow-800',
+      '매일경제': 'bg-green-100 text-green-800',
+      '서울신문': 'bg-purple-100 text-purple-800',
+      '조선일보': 'bg-indigo-100 text-indigo-800',
+      '중앙일보': 'bg-pink-100 text-pink-800',
+      '한겨레': 'bg-cyan-100 text-cyan-800',
+      'default': 'bg-gray-100 text-gray-800'
+    };
+    
+    return colors[source] || colors.default;
   };
 
-  const categoryColor = article.category 
-    ? categoryColors[article.category] || categoryColors.default
-    : categoryColors.default;
+  const sourceColor = article.source ? getSourceColor(article.source) : getSourceColor('default');
 
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 h-full flex flex-col">
@@ -45,9 +47,9 @@ export default function NewsCard({ article }) {
           </div>
         )}
         
-        {article.category && (
-          <span className={`absolute top-3 left-3 px-2 py-1 rounded-md text-xs font-medium ${categoryColor}`}>
-            {article.category}
+        {article.source && (
+          <span className={`absolute top-3 left-3 px-2 py-1 rounded-md text-xs font-medium ${sourceColor}`}>
+            {article.source}
           </span>
         )}
       </div>
@@ -66,8 +68,6 @@ export default function NewsCard({ article }) {
         
         <p className="text-gray-500 text-xs mb-3 flex items-center">
           <span className="inline-block mr-2">{formattedDate}</span>
-          <span className="w-1 h-1 bg-gray-300 rounded-full inline-block mr-2"></span>
-          <span>{article.source || '출처 미상'}</span>
         </p>
         
         {article.summary && (

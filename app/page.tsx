@@ -7,7 +7,6 @@ import SearchBar from '@/components/SearchBar';
 import NewsFilters from '@/components/NewsFilters';
 import supabase from '@/lib/supabaseClient';
 
-// 메인 페이지
 export default function Home() {
   const [news, setNews] = useState([]);
   const [filteredNews, setFilteredNews] = useState([]);
@@ -15,65 +14,81 @@ export default function Home() {
   const [currentFilter, setCurrentFilter] = useState('all');
   const [currentSort, setCurrentSort] = useState('latest');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sources, setSources] = useState([]);
 
-  // 뉴스 데이터 가져오기
-  useEffect(() => {
-    async function fetchNews() {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('crawled_contents')
-          .select('*')
-          .order('published_at', { ascending: false })
-          .limit(50);
-
-        if (error) {
-          console.error('Error fetching news:', error);
-          return;
-        }
-
-        setNews(data || []);
-        setFilteredNews(data || []);
-      } catch (error) {
-        console.error('Failed to fetch news:', error);
-      } finally {
-        setLoading(false);
+  // 데이터 가져오기
+  const fetchNews = async () => {
+    setLoading(true);
+    try {
+      // 기본 쿼리 설정
+      let query = supabase
+        .from('crawled_contents')
+        .select('*');
+      
+      // 출처 필터 적용
+      if (currentFilter !== 'all') {
+        query = query.eq('source', currentFilter);
       }
-    }
+      
+      // 정렬 적용
+      if (currentSort === 'latest') {
+        query = query.order('published_at', { ascending: false });
+      } else if (currentSort === 'oldest') {
+        query = query.order('published_at', { ascending: true });
+      }
+      
+      // 검색어 필터 적용 (title과 summary에서 검색)
+      if (searchTerm) {
+        query = query.or(`title.ilike.%${searchTerm}%,summary.ilike.%${searchTerm}%`);
+      }
+      
+      // 쿼리 실행
+      const { data, error } = await query.limit(50);
 
+      if (error) {
+        console.error('Error fetching news:', error);
+        return;
+      }
+
+      setFilteredNews(data || []);
+    } catch (error) {
+      console.error('Failed to fetch news:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 출처 리스트 가져오기
+  const fetchSources = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('crawled_contents')
+        .select('source')
+        .not('source', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching sources:', error);
+        return;
+      }
+
+      // 중복 제거하고 출처 배열 생성
+      const uniqueSources = [...new Set(data.map(item => item.source))].filter(Boolean);
+      setSources(uniqueSources);
+    } catch (error) {
+      console.error('Failed to fetch sources:', error);
+    }
+  };
+
+  // 초기 데이터 로딩
+  useEffect(() => {
+    fetchSources();
     fetchNews();
   }, []);
 
-  // 필터 적용
+  // 필터나 정렬이 바뀔 때마다 데이터 새로 가져오기
   useEffect(() => {
-    let result = [...news];
-    
-    // 카테고리 필터
-    if (currentFilter !== 'all') {
-      result = result.filter(item => 
-        item.category && 
-        item.category.toLowerCase() === currentFilter.toLowerCase()
-      );
-    }
-    
-    // 검색어 필터
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(item => 
-        (item.title && item.title.toLowerCase().includes(term)) || 
-        (item.summary && item.summary.toLowerCase().includes(term))
-      );
-    }
-    
-    // 정렬
-    if (currentSort === 'latest') {
-      result.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
-    } else if (currentSort === 'popular') {
-      result.sort((a, b) => (b.views || 0) - (a.views || 0));
-    }
-    
-    setFilteredNews(result);
-  }, [news, currentFilter, currentSort, searchTerm]);
+    fetchNews();
+  }, [currentFilter, currentSort, searchTerm]);
 
   const handleSearch = (term) => {
     setSearchTerm(term);
@@ -104,6 +119,7 @@ export default function Home() {
         <NewsFilters 
           onFilterChange={handleFilterChange} 
           onSortChange={handleSortChange}
+          sources={sources}
         />
       </div>
       
