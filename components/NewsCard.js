@@ -107,38 +107,47 @@ export default function NewsCard({ article }) {
     return colorOptions[colorIndex];
   };
 
+  // 출처 텍스트 길이 제한 함수
+  const truncateSource = (source, maxLength = 15) => {
+    if (!source) return '';
+    return source.length > maxLength ? `${source.substring(0, maxLength)}...` : source;
+  };
+
   const sourceColor = article.source ? getSourceColor(article.source) : getSourceColor('default');
 
   return (
     <div className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full">
       <div className="flex h-full">
         {/* 이미지 영역 - 왼쪽 배치 */}
-        <div className="relative min-w-[100px] md:min-w-[140px] max-w-[100px] md:max-w-[140px]">
+        <div className="relative min-w-[80px] md:min-w-[120px] max-w-[80px] md:max-w-[120px]">
           {article.image_url ? (
             <Image
               src={article.image_url}
               alt={article.title || '뉴스 이미지'}
               fill
-              sizes="(max-width: 768px) 100px, 140px"
+              sizes="(max-width: 768px) 80px, 120px"
               className="object-cover h-full"
               unoptimized={true}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-              <NewspaperIcon className="w-8 h-8 text-gray-300" />
+              <NewspaperIcon className="w-6 h-6 text-gray-300" />
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent mix-blend-overlay" />
         </div>
         
         {/* 컨텐츠 영역 */}
-        <div className="flex-grow p-4 flex flex-col">
-          {article.source && (
-            <span className={`mb-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${sourceColor}`}>
-              <NewspaperIcon className="w-3 h-3 mr-1" />
-              {article.source}
-            </span>
-          )}
+        <div className="flex-grow p-3 flex flex-col">
+        {article.source && (
+          <span 
+            className={`mb-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${sourceColor} w-fit`}
+            title={article.source} // 전체 텍스트를 툴팁으로 표시
+          >
+            <NewspaperIcon className="w-2.5 h-2.5 mr-1 flex-shrink-0" />
+            <span className="truncate max-w-[120px]">{truncateSource(article.source)}</span>
+          </span>
+        )}
           
           <Link 
             href={article.url} 
@@ -146,31 +155,31 @@ export default function NewsCard({ article }) {
             rel="noopener noreferrer"
             className="group"
           >
-            <h2 className="text-lg font-semibold mb-2 line-clamp-2 text-gray-800 group-hover:text-primary-600 transition-colors">
+            <h2 className="text-sm font-medium mb-1.5 line-clamp-2 text-gray-800 group-hover:text-primary-600 transition-colors">
               {article.title || '제목 없음'}
             </h2>
           </Link>
           
-          <div className="text-gray-400 text-xs mb-2 flex items-center">
-            <CalendarIcon className="w-3.5 h-3.5 mr-1" />
+          <div className="text-gray-400 text-xs mb-1.5 flex items-center">
+            <CalendarIcon className="w-3 h-3 mr-1" />
             <span>{formattedDate}</span>
           </div>
           
           {article.summary && (
-            <p className="text-gray-500 text-sm line-clamp-3 mb-3">
+            <p className="text-gray-500 text-xs line-clamp-2 mb-2">
               {article.summary}
             </p>
           )}
           
-          <div className="mt-auto pt-2">
+          <div className="mt-auto pt-1.5">
             <Link 
               href={article.url} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-primary-600 text-sm font-medium hover:text-primary-700 inline-flex items-center"
+              className="text-primary-600 text-xs font-medium hover:text-primary-700 inline-flex items-center"
             >
               <span>원문 보기</span>
-              <ArrowRightIcon className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              <ArrowRightIcon className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
