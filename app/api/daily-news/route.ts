@@ -33,8 +33,7 @@ export async function GET(request: NextRequest) {
       .select('title, url, summary, source, published_at')
       .gte('published_at', dayBeforeYesterday.toISOString())
       .lt('published_at', yesterday.toISOString())
-      .order('published_at', { ascending: false })
-      .limit(15);
+      .order('published_at', { ascending: false });
       
     if (error || !newsItems || newsItems.length === 0) {
       return NextResponse.json(
@@ -98,8 +97,7 @@ export async function POST(request: Request) {
       .select('title, url, summary, source, published_at')
       .gte('published_at', twoDaysAgo.toISOString())
       .lt('published_at', previousDay.toISOString())
-      .order('published_at', { ascending: false })
-      .limit(15);
+      .order('published_at', { ascending: false });
     
       
     if (error || !newsItems || newsItems.length === 0) {
