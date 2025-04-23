@@ -1,6 +1,6 @@
 // app/page.js
 'use client';
-
+ 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import NewsCard from '@/components/NewsCard';
 import SearchBar from '@/components/SearchBar';
