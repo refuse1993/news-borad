@@ -6,9 +6,9 @@ import NewsCard from '@/components/NewsCard';
 import SearchBar from '@/components/SearchBar';
 import NewsFilters from '@/components/NewsFilters';
 import supabase from '@/lib/supabaseClient';
-import { NewspaperIcon } from '@heroicons/react/24/outline';
+import { NewspaperIcon, ArrowPathIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
-// Define the type for a news article based on your database schema
+// 뉴스 기사 인터페이스 정의 - 번역 및 태그 필드 추가
 interface NewsArticle {
   id: number;
   title: string;
@@ -17,6 +17,9 @@ interface NewsArticle {
   url: string;
   published_at: string;
   image_url?: string;
+  translated_title?: string;
+  translated_summary?: string;
+  tags?: string[];
 }
 
 export default function Home() {
@@ -29,6 +32,9 @@ export default function Home() {
   const [sources, setSources] = useState<string[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [visibleTags, setVisibleTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const pageSize = 12;
 
   // 뉴스 데이터 가져오기
@@ -55,7 +61,14 @@ export default function Home() {
       }
 
       if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,summary.ilike.%${searchTerm}%`);
+        query = query.or(`title.ilike.%${searchTerm}%,summary.ilike.%${searchTerm}%,translated_title.ilike.%${searchTerm}%,translated_summary.ilike.%${searchTerm}%`);
+      }
+
+      // 선택된 태그가 있으면 필터링
+      if (selectedTags.length > 0) {
+        selectedTags.forEach(tag => {
+          query = query.contains('tags', [tag]);
+        });
       }
 
       const from = pageNum * pageSize;
@@ -90,7 +103,7 @@ export default function Home() {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [currentFilter, currentSort, searchTerm, pageSize]);
+  }, [currentFilter, currentSort, searchTerm, selectedTags, pageSize]);
 
   // 추가 뉴스 로딩
   const loadMoreNews = useCallback(() => {
@@ -147,13 +160,82 @@ export default function Home() {
     }
   }, []);
 
+  // 인기 태그 가져오기
+  const fetchPopularTags = useCallback(async (): Promise<void> => {
+    try {
+      const { data, error } = await supabase
+        .from('crawled_contents')
+        .select('tags')
+        .not('tags', 'is', null);
+
+      if (error) {
+        console.error('Error fetching tags:', error);
+        return;
+      }
+
+      if (data) {
+        // 모든 태그 추출 및 카운트
+        const allTags: { [key: string]: number } = {};
+        
+        data.forEach(item => {
+          if (Array.isArray(item.tags)) {
+            item.tags.forEach(tag => {
+              allTags[tag] = (allTags[tag] || 0) + 1;
+            });
+          }
+        });
+        
+        // 태그를 카운트 기준으로 정렬하고 상위 10개만 사용
+        const popularTags = Object.entries(allTags)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([tag]) => tag);
+          
+        setVisibleTags(popularTags);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tags:', error);
+    }
+  }, []);
+
+  // 스크롤 관련 로직
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
+  // 태그 선택 토글
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag) 
+        : [...prev, tag]
+    );
+  };
+
   useEffect(() => {
     fetchSources();
-  }, [fetchSources]);
+    fetchPopularTags();
+  }, [fetchSources, fetchPopularTags]);
 
   useEffect(() => {
     resetAndFetchNews();
-  }, [currentFilter, currentSort, searchTerm, resetAndFetchNews]);
+  }, [currentFilter, currentSort, searchTerm, selectedTags, resetAndFetchNews]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -168,17 +250,43 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-screen-xl mx-auto">
-      <div className="mb-4">
-        <SearchBar onSearch={handleSearch} />
+    <div className="max-w-screen-xl mx-auto px-4 py-6">
+      {/* 검색 및 필터 영역 */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-6 sticky top-0 z-10 border border-gray-100">
+        <div className="mb-4">
+          <SearchBar onSearch={handleSearch} />
+        </div>
+        
+        <NewsFilters
+          onFilterChange={handleFilterChange}
+          onSortChange={handleSortChange}
+          sources={sources}
+        />
+        
+        {/* 인기 태그 */}
+        {visibleTags.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center flex-wrap gap-2">
+              <span className="text-xs font-medium text-gray-500">인기 태그:</span>
+              {visibleTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                    selectedTags.includes(tag)
+                      ? 'bg-primary-100 text-primary-700 font-medium'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-      
-      <NewsFilters
-        onFilterChange={handleFilterChange}
-        onSortChange={handleSortChange}
-        sources={sources}
-      />
 
+      {/* 뉴스 목록 영역 */}
       {initialLoading ? (
         <div className="py-12">
           <div className="flex justify-center items-center">
@@ -196,6 +304,35 @@ export default function Home() {
         </div>
       ) : (
         <>
+          {/* 선택된 태그 표시 */}
+          {selectedTags.length > 0 && (
+            <div className="flex items-center mb-4 py-2 px-4 bg-primary-50 rounded-lg">
+              <span className="text-sm font-medium text-primary-700 mr-2">선택된 태그:</span>
+              <div className="flex flex-wrap gap-2">
+                {selectedTags.map(tag => (
+                  <span 
+                    key={tag}
+                    className="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded-md flex items-center"
+                  >
+                    {tag}
+                    <button
+                      onClick={() => toggleTag(tag)}
+                      className="ml-1.5 text-primary-600 hover:text-primary-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <button
+                  onClick={() => setSelectedTags([])}
+                  className="text-xs text-primary-600 hover:text-primary-800 underline"
+                >
+                  모두 지우기
+                </button>
+              </div>
+            </div>
+          )}
+        
           <div className="grid grid-cols-1 gap-4 mb-6">
             {news.map((article, index) => {
               if (news.length === index + 1) {
@@ -223,6 +360,26 @@ export default function Home() {
             </div>
           )}
         </>
+      )}
+      
+      {/* 새로고침 버튼 */}
+      <button
+        onClick={resetAndFetchNews}
+        className="fixed bottom-20 right-6 p-3 bg-white rounded-full shadow-md hover:shadow-lg transition-all z-20 text-primary-600 hover:text-primary-700 border border-gray-200"
+        title="새로고침"
+      >
+        <ArrowPathIcon className="h-5 w-5" />
+      </button>
+      
+      {/* 위로 스크롤 버튼 */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 p-3 bg-primary-500 rounded-full shadow-md hover:shadow-lg transition-all z-20 text-white hover:bg-primary-600"
+          title="위로 이동"
+        >
+          <ChevronUpIcon className="h-5 w-5" />
+        </button>
       )}
     </div>
   );

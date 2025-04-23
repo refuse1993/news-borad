@@ -1,8 +1,8 @@
-// layout.tsx 파일을 수정해 네비게이션 메뉴에 RSS 피드 관리 링크 추가
+// layout.tsx 파일을 수정해 네비게이션 메뉴에 태그 분석 링크 추가
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ReactNode } from 'react'
-import { NewspaperIcon, RssIcon } from '@heroicons/react/24/outline'
+import { NewspaperIcon, RssIcon, TagIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -39,6 +39,13 @@ export default function RootLayout({
                 className="px-4 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-md transition text-sm sm:text-base"
               >
                 일간 뉴스 정리
+              </Link>
+              <Link 
+                href="/tags" 
+                className="px-4 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-md transition text-sm sm:text-base"
+              >
+                <TagIcon className="h-4 w-4 inline mr-1" />
+                태그 분석
               </Link>
               <Link 
                 href="/feeds" 

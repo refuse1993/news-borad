@@ -3,76 +3,24 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { CalendarIcon, ArrowRightIcon, NewspaperIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ArrowRightIcon, NewspaperIcon, TagIcon, LanguageIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
 
 export default function NewsCard({ article }) {
-  // 날짜 포맷팅
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [expandedTags, setExpandedTags] = useState(false);
+  
+  // 날짜 포맷팅 (간결하게)
   const formattedDate = article.published_at 
-    ? format(new Date(article.published_at), 'PPP', { locale: ko })
-    : '날짜 없음';
+    ? format(new Date(article.published_at), 'yy.MM.dd', { locale: ko })
+    : '-';
 
-  // 출처별 색상 정의 - 해시 함수를 사용하여 동적으로 색상 할당
+  // 출처 색상 - 더 간결한 해시 함수 사용
   const getSourceColor = (source) => {
-    // 보안 관련 출처들에 대한 대표적인 색상 매핑
-    const colors = {
-      'PoC Exploits': 'bg-red-100 text-red-800',
-      'Exploit DB': 'bg-orange-100 text-orange-800',
-      'Symantec': 'bg-yellow-100 text-yellow-800',
-      'AhnLab': 'bg-amber-100 text-amber-800',
-      'Packet Strom': 'bg-lime-100 text-lime-800',
-      'Malware Traffic Analysis': 'bg-green-100 text-green-800',
-      'Infostealers': 'bg-emerald-100 text-emerald-800',
-      'ISC SANS': 'bg-teal-100 text-teal-800',
-      'Avast': 'bg-cyan-100 text-cyan-800',
-      'SOCRadar': 'bg-sky-100 text-sky-800',
-      'Arxiv': 'bg-blue-100 text-blue-800',
-      'Red Canary': 'bg-indigo-100 text-indigo-800',
-      'Proofpoint': 'bg-violet-100 text-violet-800',
-      'VirusTotal': 'bg-purple-100 text-purple-800',
-      'DomainTools': 'bg-fuchsia-100 text-fuchsia-800',
-      'WizHive Pro': 'bg-pink-100 text-pink-800',
-      'Crowdstrike': 'bg-rose-100 text-rose-800',
-      'Cisco Talos': 'bg-red-100 text-red-800',
-      'Cybereason': 'bg-orange-100 text-orange-800',
-      'Cyble': 'bg-yellow-100 text-yellow-800',
-      'ReversingLabs': 'bg-lime-100 text-lime-800',
-      'ESET': 'bg-green-100 text-green-800',
-      'Recorded Future': 'bg-emerald-100 text-emerald-800',
-      'Google Cloud (Mandiant)': 'bg-teal-100 text-teal-800',
-      'Cloudflare': 'bg-cyan-100 text-cyan-800',
-      'Reddit': 'bg-blue-100 text-blue-800',
-      'Trend Micro': 'bg-indigo-100 text-indigo-800',
-      'Sekoia': 'bg-violet-100 text-violet-800',
-      'Fortinet': 'bg-purple-100 text-purple-800',
-      'Lab52': 'bg-fuchsia-100 text-fuchsia-800',
-      'Check Point Research': 'bg-pink-100 text-pink-800',
-      'Citizenlab': 'bg-rose-100 text-rose-800',
-      'Team Cymru': 'bg-amber-100 text-amber-800',
-      'ANY.RUN': 'bg-lime-100 text-lime-800',
-      'Recent Ransomware Victims': 'bg-red-100 text-red-800',
-      'VMware Threat Analysis Unit (TAU)': 'bg-blue-100 text-blue-800',
-      'Google Project Zero': 'bg-emerald-100 text-emerald-800',
-      'The Hacker News': 'bg-cyan-100 text-cyan-800',
-      'Kaspersky': 'bg-indigo-100 text-indigo-800',
-      'Help Net Security': 'bg-violet-100 text-violet-800',
-      'Securelist': 'bg-amber-100 text-amber-800',
-      'Cyber Security News': 'bg-green-100 text-green-800',
-      'darkreading': 'bg-purple-100 text-purple-800',
-      '보안취약점 정보포털': 'bg-rose-100 text-rose-800',
-      '데일리시큐 - 이슈': 'bg-sky-100 text-sky-800',
-      'GBHackers Security': 'bg-teal-100 text-teal-800',
-      'Unit 42': 'bg-orange-100 text-orange-800',
-      'MSRC & MSTIC': 'bg-blue-100 text-blue-800',
-      'Microsoft Security Blog': 'bg-indigo-100 text-indigo-800',
-      'default': 'bg-gray-100 text-gray-800'
-    };
+    if (!source) return 'bg-gray-100 text-gray-700';
     
-    // 매핑된 색상이 있으면 사용, 없으면 문자열 해시에 기반한 색상 생성
-    if (colors[source]) {
-      return colors[source];
-    }
-    
-    // 간단한 해시 함수로 문자열을 숫자로 변환
+    // 해시 함수
     const hashCode = str => {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
@@ -81,105 +29,218 @@ export default function NewsCard({ article }) {
       return hash;
     };
     
-    // 색상 배열 (기본 색상 10개)
-    const colorOptions = [
-      'bg-red-100 text-red-800',
-      'bg-orange-100 text-orange-800',
-      'bg-amber-100 text-amber-800',
-      'bg-yellow-100 text-yellow-800',
-      'bg-lime-100 text-lime-800',
-      'bg-green-100 text-green-800',
-      'bg-emerald-100 text-emerald-800',
-      'bg-teal-100 text-teal-800',
-      'bg-cyan-100 text-cyan-800',
-      'bg-sky-100 text-sky-800',
-      'bg-blue-100 text-blue-800',
-      'bg-indigo-100 text-indigo-800',
-      'bg-violet-100 text-violet-800',
-      'bg-purple-100 text-purple-800',
-      'bg-fuchsia-100 text-fuchsia-800',
-      'bg-pink-100 text-pink-800',
-      'bg-rose-100 text-rose-800'
+    const colors = [
+      'bg-red-100 text-red-700', 'bg-amber-100 text-amber-700', 
+      'bg-green-100 text-green-700', 'bg-teal-100 text-teal-700',
+      'bg-sky-100 text-sky-700', 'bg-blue-100 text-blue-700', 
+      'bg-indigo-100 text-indigo-700', 'bg-purple-100 text-purple-700'
     ];
     
-    // 해시값에 따라 색상 선택
-    const colorIndex = Math.abs(hashCode(source)) % colorOptions.length;
-    return colorOptions[colorIndex];
+    return colors[Math.abs(hashCode(source)) % colors.length];
   };
 
-  // 출처 텍스트 길이 제한 함수
-  const truncateSource = (source, maxLength = 15) => {
-    if (!source) return '';
-    return source.length > maxLength ? `${source.substring(0, maxLength)}...` : source;
+  // 태그 색상
+  const getTagColor = (tag) => {
+    if (!tag) return 'bg-gray-100 text-gray-700';
+    
+    const hashCode = str => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return hash;
+    };
+    
+    const colors = [
+      'bg-blue-100 text-blue-700', 'bg-emerald-100 text-emerald-700',
+      'bg-amber-100 text-amber-700', 'bg-indigo-100 text-indigo-700',
+      'bg-rose-100 text-rose-700', 'bg-cyan-100 text-cyan-700'
+    ];
+    
+    return colors[Math.abs(hashCode(tag)) % colors.length];
   };
 
-  const sourceColor = article.source ? getSourceColor(article.source) : getSourceColor('default');
+  // 커스텀 ID 생성 (article.id가 없을 경우를 대비)
+  const cardId = article.id || `news-${article.title?.substring(0, 10) || Math.random().toString(36).substring(7)}`;
+  
+  const hasTranslation = article.translated_title || article.translated_summary;
+  const sourceColor = getSourceColor(article.source);
+  
+  // 태그 토글 클릭 핸들러 - 해당 요소 외 클릭 시 닫히도록
+  useEffect(() => {
+    // 태그가 확장된 상태일 때만 이벤트 리스너 추가
+    if (expandedTags) {
+      const handleClickOutside = (event) => {
+        // 클릭된 요소가 태그 컨테이너의 자식이 아니면 태그 접기
+        const tagContainer = document.getElementById(`tag-container-${cardId}`);
+        if (tagContainer && !tagContainer.contains(event.target)) {
+          setExpandedTags(false);
+        }
+      };
 
+      // 이벤트 리스너 등록
+      document.addEventListener('mousedown', handleClickOutside);
+      
+      // 컴포넌트 언마운트 시 이벤트 리스너 제거
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [expandedTags, cardId]);
+
+  // 요약 토글 클릭 핸들러 - 해당 요소 외 클릭 시 닫히도록
+  useEffect(() => {
+    // 요약이 확장된 상태일 때만 이벤트 리스너 추가
+    if (expanded) {
+      const handleClickOutside = (event) => {
+        // 클릭된 요소가 요약 컨테이너의 자식이 아니면 요약 접기
+        const summaryContainer = document.getElementById(`summary-container-${cardId}`);
+        if (summaryContainer && !summaryContainer.contains(event.target)) {
+          setExpanded(false);
+        }
+      };
+
+      // 이벤트 리스너 등록
+      document.addEventListener('mousedown', handleClickOutside);
+      
+      // 컴포넌트 언마운트 시 이벤트 리스너 제거
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [expanded, cardId]);
+  
   return (
-    <div className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full">
+    <div className="group bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-200 h-full">
       <div className="flex h-full">
-        {/* 이미지 영역 - 왼쪽 배치 */}
-        <div className="relative min-w-[80px] md:min-w-[120px] max-w-[80px] md:max-w-[120px]">
+        {/* 왼쪽 썸네일 영역 (작게 유지) */}
+        <div className="relative min-w-[60px] max-w-[60px]">
           {article.image_url ? (
             <Image
               src={article.image_url}
               alt={article.title || '뉴스 이미지'}
               fill
-              sizes="(max-width: 768px) 80px, 120px"
-              className="object-cover h-full"
+              sizes="60px"
+              className="object-cover h-full rounded-l-lg"
               unoptimized={true}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-              <NewspaperIcon className="w-6 h-6 text-gray-300" />
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center rounded-l-lg">
+              <NewspaperIcon className="w-4 h-4 text-gray-400" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent mix-blend-overlay" />
         </div>
         
         {/* 컨텐츠 영역 */}
-        <div className="flex-grow p-3 flex flex-col">
-        {article.source && (
-          <span 
-            className={`mb-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${sourceColor} w-fit`}
-            title={article.source} // 전체 텍스트를 툴팁으로 표시
-          >
-            <NewspaperIcon className="w-2.5 h-2.5 mr-1 flex-shrink-0" />
-            <span className="truncate max-w-[120px]">{truncateSource(article.source)}</span>
-          </span>
-        )}
+        <div className="flex-1 p-2.5 flex flex-col overflow-hidden">
+          {/* 상단 메타 정보 (출처, 날짜) */}
+          <div className="flex items-center justify-between mb-1.5 text-xs gap-1">
+            {article.source && (
+              <span 
+                className={`inline-flex items-center px-1.5 py-0.5 rounded-full ${sourceColor} max-w-[120px] truncate`}
+                title={article.source}
+              >
+                <span className="truncate">{article.source}</span>
+              </span>
+            )}
+            
+            <span className="text-gray-400 flex items-center flex-shrink-0">
+              <CalendarIcon className="w-3 h-3 mr-0.5" />
+              {formattedDate}
+            </span>
+          </div>
           
+          {/* 제목 */}
           <Link 
             href={article.url} 
             target="_blank" 
             rel="noopener noreferrer"
             className="group"
           >
-            <h2 className="text-sm font-medium mb-1.5 line-clamp-2 text-gray-800 group-hover:text-primary-600 transition-colors">
-              {article.title || '제목 없음'}
+            <h2 className="text-sm font-medium mb-1 line-clamp-2 text-gray-800 group-hover:text-blue-600 transition-colors">
+              {showTranslation && article.translated_title ? article.translated_title : article.title || '제목 없음'}
             </h2>
           </Link>
           
-          <div className="text-gray-400 text-xs mb-1.5 flex items-center">
-            <CalendarIcon className="w-3 h-3 mr-1" />
-            <span>{formattedDate}</span>
-          </div>
-          
-          {article.summary && (
-            <p className="text-gray-500 text-xs line-clamp-2 mb-2">
-              {article.summary}
-            </p>
+          {/* 요약 (펼치기 기능 포함) */}
+          {(article.summary || article.translated_summary) && (
+            <div className="mb-1.5 text-xs text-gray-500" id={`summary-container-${cardId}`}>
+              <div className={expanded ? '' : 'line-clamp-1'}>
+                {showTranslation && article.translated_summary ? article.translated_summary : article.summary}
+              </div>
+              {((article.summary && article.summary.length > 60) || 
+                (article.translated_summary && article.translated_summary.length > 60)) && (
+                <button 
+                  onClick={() => setExpanded(!expanded)} 
+                  className="mt-0.5 inline-flex items-center text-blue-500 hover:text-blue-600 group"
+                  aria-label={expanded ? "접기" : "펼치기"}
+                >
+                  <ChevronDownIcon className={`w-3 h-3 mr-0.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                  <span className="text-xs">{expanded ? "접기" : "더보기"}</span>
+                </button>
+              )}
+            </div>
           )}
           
-          <div className="mt-auto pt-1.5">
+          {/* 태그 (펼치기 기능 포함) */}
+          {article.tags && article.tags.length > 0 && (
+            <div className="mb-1.5" id={`tag-container-${cardId}`}>
+              <div className="flex flex-wrap gap-1">
+                {(expandedTags ? article.tags : article.tags.slice(0, 2)).map((tag, index) => (
+                  <span 
+                    key={index}
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs ${getTagColor(tag)}`}
+                  >
+                    <TagIcon className="w-2 h-2 mr-0.5" />
+                    <span className="truncate max-w-[80px]">{tag}</span>
+                  </span>
+                ))}
+                {!expandedTags && article.tags.length > 2 && (
+                  <button 
+                    onClick={() => setExpandedTags(true)}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    aria-label="태그 더 보기"
+                  >
+                    <span>+{article.tags.length - 2}</span>
+                    <ChevronDownIcon className="w-2.5 h-2.5 ml-0.5" />
+                  </button>
+                )}
+              </div>
+              {expandedTags && (
+                <button 
+                  onClick={() => setExpandedTags(false)} 
+                  className="text-xs text-blue-500 hover:text-blue-600 mt-1 inline-flex items-center group"
+                  aria-label="태그 접기"
+                >
+                  <ChevronDownIcon className="w-3 h-3 mr-0.5 rotate-180" />
+                  <span>접기</span>
+                </button>
+              )}
+            </div>
+          )}
+          
+          {/* 하단 액션 영역 */}
+          <div className="mt-auto flex items-center justify-between text-xs">
+            {/* 번역 토글 */}
+            {hasTranslation && (
+              <button
+                onClick={() => setShowTranslation(!showTranslation)}
+                className={`flex items-center ${showTranslation ? 'text-blue-600' : 'text-gray-500'}`}
+              >
+                <LanguageIcon className="w-3 h-3 mr-0.5" />
+                {showTranslation ? '원문' : '번역'}
+              </button>
+            )}
+            
+            {/* 원문 링크 */}
             <Link 
               href={article.url} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-primary-600 text-xs font-medium hover:text-primary-700 inline-flex items-center"
+              className="text-blue-600 hover:text-blue-700 flex items-center ml-auto"
             >
-              <span>원문 보기</span>
-              <ArrowRightIcon className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
+              <span>원문</span>
+              <ArrowRightIcon className="h-3 w-3 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
         </div>
