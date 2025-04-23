@@ -53,7 +53,7 @@ export default function RootLayout({
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center mb-4 md:mb-0">
                 <NewspaperIcon className="h-5 w-5 text-gray-400 mr-2" />
-                <span className="text-gray-500 font-medium">뉴스 모음</span>
+                <span className="text-gray-500 font-medium">CEA News</span>
               </div>
               <p className="text-sm text-gray-400">
                 © {new Date().getFullYear()} 뉴스 모음 플랫폼. All rights reserved.
