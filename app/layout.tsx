@@ -27,23 +27,20 @@ export default function RootLayout({
               <h1 className="text-xl font-semibold text-gray-800">뉴스 모음</h1>
             </div>
             
-            <nav className="flex items-center space-x-4">
-              <Link href="/" className="text-gray-600 hover:text-primary-600 transition text-sm sm:text-base">
-                홈
+            <nav className="flex items-center">
+              <Link 
+                href="/" 
+                className="px-4 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-md transition text-sm sm:text-base"
+              >
+                뉴스 목록
               </Link>
-              <Link href="/daily-news" className="text-gray-600 hover:text-primary-600 transition text-sm sm:text-base">
-                일간 뉴스
+              <Link 
+                href="/daily-news" 
+                className="px-4 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-md transition text-sm sm:text-base"
+              >
+                일간 뉴스 정리
               </Link>
             </nav>
-            
-            <div className="text-sm text-gray-500">
-              {new Date().toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'long'
-              })}
-            </div>
           </div>
         </header>
         

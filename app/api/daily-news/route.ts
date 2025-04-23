@@ -23,13 +23,16 @@ export async function GET(request: NextRequest) {
     }
     
     // 오늘의 최신 뉴스 가져오기 (최근 24시간)
-    const yesterday = new Date();
+    const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
+    const dayBeforeYesterday = new Date(yesterday);
+    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 1);
     
     const { data: newsItems, error } = await supabase
       .from('crawled_contents')
       .select('title, url, summary, source, published_at')
-      .gte('published_at', yesterday.toISOString())
+      .gte('published_at', dayBeforeYesterday.toISOString())
+      .lt('published_at', yesterday.toISOString())
       .order('published_at', { ascending: false })
       .limit(15);
       
@@ -84,17 +87,20 @@ export async function POST(request: Request) {
     }
     
     // 특정 날짜의 뉴스 가져오기
-    const startDate = new Date(date);
-    const endDate = new Date(date);
-    endDate.setDate(endDate.getDate() + 1);
+    const targetDate = new Date(date);
+    const previousDay = new Date(targetDate);
+    previousDay.setDate(previousDay.getDate() - 1);
+    const twoDaysAgo = new Date(previousDay);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 1);
     
     const { data: newsItems, error } = await supabase
       .from('crawled_contents')
       .select('title, url, summary, source, published_at')
-      .gte('published_at', startDate.toISOString())
-      .lt('published_at', endDate.toISOString())
+      .gte('published_at', twoDaysAgo.toISOString())
+      .lt('published_at', previousDay.toISOString())
       .order('published_at', { ascending: false })
       .limit(15);
+    
       
     if (error || !newsItems || newsItems.length === 0) {
       return NextResponse.json(
