@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ListBulletIcon, Squares2X2Icon  } from '@heroicons/react/24/outline';
 
 export default function DailyNewsPage() {
   const [newsHtml, setNewsHtml] = useState<string>('');
@@ -10,6 +10,8 @@ export default function DailyNewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [regenerating, setRegenerating] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list'); // 뷰 모드 상태 추가
+
 
   // 뉴스 다이제스트 가져오기
   const fetchNewsDigest = async (selectedDate: string) => {
@@ -90,6 +92,29 @@ export default function DailyNewsPage() {
         </div>
         
         <div className="flex items-center gap-2">
+                    {/* 뷰 모드 토글 버튼 추가 */}
+                    <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-2 py-1 text-xs flex items-center gap-1 transition
+                ${viewMode === 'list' 
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              <ListBulletIcon className="h-3 w-3" />
+              리스트
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-2 py-1 text-xs flex items-center gap-1 transition border-l border-gray-300
+                ${viewMode === 'grid' 
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Squares2X2Icon className="h-3 w-3" />
+              그리드
+            </button>
+          </div>
           <input 
             type="date" 
             className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"

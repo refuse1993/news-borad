@@ -6,7 +6,7 @@ import { ko } from 'date-fns/locale';
 import { CalendarIcon, ArrowRightIcon, NewspaperIcon, TagIcon, LanguageIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 
-export default function NewsCard({ article }) {
+export default function NewsCard({ article, viewMode = 'list' }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [expandedTags, setExpandedTags] = useState(false);
@@ -66,75 +66,84 @@ export default function NewsCard({ article }) {
   const hasTranslation = article.translated_title || article.translated_summary;
   const sourceColor = getSourceColor(article.source);
   
-  // 태그 토글 클릭 핸들러 - 해당 요소 외 클릭 시 닫히도록
+  // 태그/요약 외부 클릭 감지 이벤트 리스너
   useEffect(() => {
     // 태그가 확장된 상태일 때만 이벤트 리스너 추가
     if (expandedTags) {
       const handleClickOutside = (event) => {
-        // 클릭된 요소가 태그 컨테이너의 자식이 아니면 태그 접기
         const tagContainer = document.getElementById(`tag-container-${cardId}`);
         if (tagContainer && !tagContainer.contains(event.target)) {
           setExpandedTags(false);
         }
       };
 
-      // 이벤트 리스너 등록
       document.addEventListener('mousedown', handleClickOutside);
-      
-      // 컴포넌트 언마운트 시 이벤트 리스너 제거
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [expandedTags, cardId]);
 
-  // 요약 토글 클릭 핸들러 - 해당 요소 외 클릭 시 닫히도록
   useEffect(() => {
     // 요약이 확장된 상태일 때만 이벤트 리스너 추가
     if (expanded) {
       const handleClickOutside = (event) => {
-        // 클릭된 요소가 요약 컨테이너의 자식이 아니면 요약 접기
         const summaryContainer = document.getElementById(`summary-container-${cardId}`);
         if (summaryContainer && !summaryContainer.contains(event.target)) {
           setExpanded(false);
         }
       };
 
-      // 이벤트 리스너 등록
       document.addEventListener('mousedown', handleClickOutside);
-      
-      // 컴포넌트 언마운트 시 이벤트 리스너 제거
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [expanded, cardId]);
   
   return (
-    <div className="group bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-200 h-full">
-      <div className="flex h-full">
-        {/* 왼쪽 썸네일 영역 (작게 유지) */}
-        <div className="relative min-w-[60px] max-w-[60px]">
-          {article.image_url ? (
-            <Image
-              src={article.image_url}
-              alt={article.title || '뉴스 이미지'}
-              fill
-              sizes="60px"
-              className="object-cover h-full rounded-l-lg"
-              unoptimized={true}
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-100 flex items-center justify-center rounded-l-lg">
-              <NewspaperIcon className="w-4 h-4 text-gray-400" />
+    <div className={`group bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-200 h-full ${
+      viewMode === 'grid' ? 'flex-col' : ''
+    }`}>
+      <div className={`flex ${viewMode === 'grid' ? 'flex-col h-full' : 'h-full'}`}>
+          {/* 썸네일 영역 (그리드 뷰일 때는 더 크게) */}
+          <div className={`relative ${
+              viewMode === 'grid' 
+                ? 'w-full h-32' 
+                : 'min-w-[60px] max-w-[60px]'
+            }`}>
+              {article.image_url ? (
+                <Image
+                  src={article.image_url}
+                  alt={article.title || '뉴스 이미지'}
+                  fill
+                  sizes={viewMode === 'grid' ? "100%" : "60px"}
+                  className={`object-cover ${
+                    viewMode === 'grid' 
+                      ? 'rounded-t-lg' 
+                      : 'h-full rounded-l-lg'
+                  }`}
+                  unoptimized={true}
+                />
+              ) : (
+                <div className={`w-full h-full bg-gray-100 flex items-center justify-center ${
+                  viewMode === 'grid' 
+                    ? 'rounded-t-lg' 
+                    : 'rounded-l-lg'
+                }`}>
+                  <NewspaperIcon className={`${
+                    viewMode === 'grid' 
+                      ? 'w-12 h-12' 
+                      : 'w-4 h-4'
+                  } text-gray-400`} />
+                </div>
+              )}
             </div>
-          )}
-        </div>
         
         {/* 컨텐츠 영역 */}
-        <div className="flex-1 p-2.5 flex flex-col overflow-hidden">
+        <div className={`flex-1 p-2.5 flex flex-col overflow-hidden ${
+          viewMode === 'grid' ? 'p-4' : ''
+        }`}>
           {/* 상단 메타 정보 (출처, 날짜) */}
-          <div className="flex items-center justify-between mb-1.5 text-xs gap-1">
+          <div className={`flex items-center justify-between mb-1.5 text-xs gap-1 ${
+            viewMode === 'grid' ? 'mb-2' : ''
+          }`}>
             {article.source && (
               <span 
                 className={`inline-flex items-center px-1.5 py-0.5 rounded-full ${sourceColor} max-w-[120px] truncate`}
@@ -150,22 +159,28 @@ export default function NewsCard({ article }) {
             </span>
           </div>
           
-          {/* 제목 */}
+          {/* 제목 (그리드 뷰일 때는 더 크게) */}
           <Link 
             href={article.url} 
             target="_blank" 
             rel="noopener noreferrer"
             className="group"
           >
-            <h2 className="text-sm font-medium mb-1 line-clamp-2 text-gray-800 group-hover:text-blue-600 transition-colors">
+            <h2 className={`${
+              viewMode === 'grid' 
+                ? 'text-base font-semibold mb-2' 
+                : 'text-sm font-medium mb-1'
+            } line-clamp-2 text-gray-800 group-hover:text-blue-600 transition-colors`}>
               {showTranslation && article.translated_title ? article.translated_title : article.title || '제목 없음'}
             </h2>
           </Link>
           
-          {/* 요약 (펼치기 기능 포함) */}
+          {/* 요약 (그리드 뷰일 때는 더 많은 텍스트 표시) */}
           {(article.summary || article.translated_summary) && (
-            <div className="mb-1.5 text-xs text-gray-500" id={`summary-container-${cardId}`}>
-              <div className={expanded ? '' : 'line-clamp-1'}>
+            <div className={`mb-1.5 text-xs text-gray-500 ${
+              viewMode === 'grid' ? 'text-sm mb-3' : ''
+            }`} id={`summary-container-${cardId}`}>
+              <div className={expanded ? '' : (viewMode === 'grid' ? 'line-clamp-3' : 'line-clamp-1')}>
                 {showTranslation && article.translated_summary ? article.translated_summary : article.summary}
               </div>
               {((article.summary && article.summary.length > 60) || 
@@ -184,9 +199,9 @@ export default function NewsCard({ article }) {
           
           {/* 태그 (펼치기 기능 포함) */}
           {article.tags && article.tags.length > 0 && (
-            <div className="mb-1.5" id={`tag-container-${cardId}`}>
+            <div className={`mb-1.5 ${viewMode === 'grid' ? 'mb-3' : ''}`} id={`tag-container-${cardId}`}>
               <div className="flex flex-wrap gap-1">
-                {(expandedTags ? article.tags : article.tags.slice(0, 2)).map((tag, index) => (
+                {(expandedTags ? article.tags : article.tags.slice(0, viewMode === 'grid' ? 3 : 2)).map((tag, index) => (
                   <span 
                     key={index}
                     className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs ${getTagColor(tag)}`}
@@ -195,13 +210,13 @@ export default function NewsCard({ article }) {
                     <span className="truncate max-w-[80px]">{tag}</span>
                   </span>
                 ))}
-                {!expandedTags && article.tags.length > 2 && (
+                {!expandedTags && article.tags.length > (viewMode === 'grid' ? 3 : 2) && (
                   <button 
                     onClick={() => setExpandedTags(true)}
                     className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                     aria-label="태그 더 보기"
                   >
-                    <span>+{article.tags.length - 2}</span>
+                    <span>+{article.tags.length - (viewMode === 'grid' ? 3 : 2)}</span>
                     <ChevronDownIcon className="w-2.5 h-2.5 ml-0.5" />
                   </button>
                 )}
@@ -220,14 +235,16 @@ export default function NewsCard({ article }) {
           )}
           
           {/* 하단 액션 영역 */}
-          <div className="mt-auto flex items-center justify-between text-xs">
+          <div className={`mt-auto flex items-center justify-between text-xs ${
+            viewMode === 'grid' ? 'text-sm' : ''
+          }`}>
             {/* 번역 토글 */}
             {hasTranslation && (
               <button
                 onClick={() => setShowTranslation(!showTranslation)}
                 className={`flex items-center ${showTranslation ? 'text-blue-600' : 'text-gray-500'}`}
               >
-                <LanguageIcon className="w-3 h-3 mr-0.5" />
+                <LanguageIcon className={`${viewMode === 'grid' ? 'w-4 h-4' : 'w-3 h-3'} mr-0.5`} />
                 {showTranslation ? '원문' : '번역'}
               </button>
             )}
@@ -240,7 +257,7 @@ export default function NewsCard({ article }) {
               className="text-blue-600 hover:text-blue-700 flex items-center ml-auto"
             >
               <span>원문</span>
-              <ArrowRightIcon className="h-3 w-3 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRightIcon className={`${viewMode === 'grid' ? 'h-4 w-4' : 'h-3 w-3'} ml-0.5 group-hover:translate-x-0.5 transition-transform`} />
             </Link>
           </div>
         </div>

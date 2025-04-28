@@ -6,7 +6,13 @@ import NewsCard from '@/components/NewsCard';
 import SearchBar from '@/components/SearchBar';
 import NewsFilters from '@/components/NewsFilters';
 import supabase from '@/lib/supabaseClient';
-import { NewspaperIcon, ArrowPathIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { 
+  NewspaperIcon, 
+  ArrowPathIcon, 
+  ChevronUpIcon,
+  ViewColumnsIcon,
+  ListBulletIcon 
+} from '@heroicons/react/24/outline';
 
 // 뉴스 기사 인터페이스 정의 - 번역 및 태그 필드 추가
 interface NewsArticle {
@@ -35,6 +41,7 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [visibleTags, setVisibleTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list'); // 뷰 모드 상태 추가
   const pageSize = 12;
 
   // 뉴스 데이터 가져오기
@@ -257,11 +264,39 @@ export default function Home() {
           <SearchBar onSearch={handleSearch} />
         </div>
         
-        <NewsFilters
-          onFilterChange={handleFilterChange}
-          onSortChange={handleSortChange}
-          sources={sources}
-        />
+        <div className="flex justify-between items-center">
+          <NewsFilters
+            onFilterChange={handleFilterChange}
+            onSortChange={handleSortChange}
+            sources={sources}
+          />
+          
+          {/* 뷰 모드 전환 버튼 */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded ${
+                viewMode === 'list' 
+                  ? 'bg-white shadow-sm text-primary-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              title="리스트 뷰"
+            >
+              <ListBulletIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded ${
+                viewMode === 'grid' 
+                  ? 'bg-white shadow-sm text-primary-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              title="그리드 뷰"
+            >
+              <ViewColumnsIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
         
         {/* 인기 태그 */}
         {visibleTags.length > 0 && (
@@ -333,16 +368,21 @@ export default function Home() {
             </div>
           )}
         
-          <div className="grid grid-cols-1 gap-4 mb-6">
+          {/* 뉴스 그리드 - 뷰 모드에 따라 레이아웃 변경 */}
+          <div className={`grid ${
+            viewMode === 'grid' 
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+              : 'grid-cols-1'
+          } gap-4 mb-6`}>
             {news.map((article, index) => {
               if (news.length === index + 1) {
                 return (
                   <div ref={lastNewsElementRef} key={article.id}>
-                    <NewsCard article={article} />
+                    <NewsCard article={article} viewMode={viewMode} />
                   </div>
                 );
               } else {
-                return <NewsCard key={article.id} article={article} />;
+                return <NewsCard key={article.id} article={article} viewMode={viewMode} />;
               }
             })}
           </div>
